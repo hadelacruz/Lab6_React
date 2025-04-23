@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Juego de Memoria</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f4f4f4;
+    }
+    h1 {
+      margin-top: 20px;
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(4, 100px);
+      grid-gap: 10px;
+      justify-content: center;
+      margin: 20px auto;
+    }
+    .card {
+      width: 100px;
+      height: 100px;
+      background-color: #ccc;
+      font-size: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      perspective: 1000px;
+    }
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      transform-style: preserve-3d;
+    }
+    .flipped .card-inner {
+      transform: rotateX(180deg);
+    }
+    .card-front, .card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+    }
+    .card-front {
+      background: #af7ac5;
+      color: white;
+    }
+    .card-back {
+      background: #6c3483;
+      transform: rotateX(180deg);
+      color: white;
+    }
+    .counter {
+      margin-top: 10px;
+    }
+    .completed {
+      font-size: 24px;
+      color: green;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Juego de Memoria</h1>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel">
+
+    const CARD_VALUES = ['🐶','🐱','🦊','🐻','🐼','🐷','🐸','🦁'];
+
+    const MyArray = (arr) => {
+        const copy = [...arr];
+        const result = [];
+
+        while (copy.length > 0) {
+            const randomIndex = Math.floor(Math.random() * copy.length);
+            const [removed] = copy.splice(randomIndex, 1);
+            result.push(removed);
+        }
+
+        return result;
+    };
+
+
+    function Game() {
+      const [cards, setCards] = React.useState([]);
+      const [flipped, setFlipped] = React.useState([]);
+      const [matched, setMatched] = React.useState([]);
+      const [moves, setMoves] = React.useState(0);
+      const [complete, setComplete] = React.useState(false);
+
+      //Duplicar las cartas
+      React.useEffect(() => {
+        const doubled = [...CARD_VALUES, ...CARD_VALUES];
+        const shuffled = MyArray(doubled.map((val, idx) => ({ id: idx, value: val })));
+        setCards(shuffled);
+      }, []);
+
+      //Verificar si ya se encontrarón todas las parejas
+      React.useEffect(() => {
+        if (matched.length === cards.length && cards.length > 0) {
+          setComplete(true);
+        }
+      }, [matched]);
+
+      //Verficar el estado de las cartas al hacer clic
+      const handleClick = (index) => {
+        if (flipped.length === 2 || flipped.includes(index) || matched.includes(index)) return;
+
+        const newFlipped = [...flipped, index];
+        setFlipped(newFlipped);
+
+        //Verificar si el par de cartas son iguales
+        if (newFlipped.length === 2) {
+          setMoves(moves + 1);
+          const [first, second] = newFlipped;
+          if (cards[first].value === cards[second].value) {
+            setMatched([...matched, first, second]);
+            setFlipped([]);
+          } else {
+            setTimeout(() => setFlipped([]), 1000);
+          }
+        }
+      };
+
+      return (
+        <div>
+          <div className="counter">Movimientos: {moves}</div>
+          <div className="board">
+            {cards.map((card, index) => {
+              const isFlipped = flipped.includes(index) || matched.includes(index);
+              return (
+                <div key={card.id} className={`card ${isFlipped ? 'flipped' : ''}`} onClick={() => handleClick(index)}>
+                  <div className="card-inner">
+                    <div className="card-front">?</div> 
+                    <div className="card-back">{card.value}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {complete && <div className="completed">Fin del Juego</div>}
+        </div>
+      );
+    }
+    //Montar juego
+    ReactDOM.render(<Game />, document.getElementById('root'));
+  </script>
+</body>
+</html>
